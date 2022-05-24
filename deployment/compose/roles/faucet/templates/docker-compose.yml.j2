@@ -24,6 +24,7 @@ services:
       - "443:443"
     command:
       - '--api'
+      - '--api.dashboard=false'
       - '--providers.docker=true'
       - '--providers.docker.exposedByDefault=false'
       - '--providers.docker.network=faucet'
@@ -53,6 +54,8 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.faucet.rule=Host(`{{ faucet_domain }}`) && Path(`/credit`) && Method(`POST`)
+      - traefik.http.middlewares.faucet.ratelimit.average=10
+      - traefik.http.middlewares.faucet.ratelimit.period=1m
       - traefik.http.middlewares.rm-credit-prefix.replacepath.path=/
       - traefik.http.routers.faucet.middlewares=rm-credit-prefix@docker
 {% if faucet_domain != 'localhost' and faucet_domain != 'faucet.localhost' %}
@@ -84,6 +87,8 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.faucetui.rule=Host(`{{ faucet_domain }}`)
+      - traefik.http.middlewares.faucet.ratelimit.average=60
+      - traefik.http.middlewares.faucet.ratelimit.period=1m
 {% if faucet_domain != 'localhost' and faucet_domain != 'faucet.localhost' %}
       - traefik.http.routers.faucetui.entrypoints=https
       - traefik.http.routers.faucetui.tls.certresolver=letsencrypt
