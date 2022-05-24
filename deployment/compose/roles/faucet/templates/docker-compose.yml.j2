@@ -1,0 +1,104 @@
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:v2.6.6
+    container_name: traefik
+    restart: always
+    volumes:
+      - ./traefik/acme.json:/acme.json
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - faucet
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=Host(`t.{{ faucet_domain }}`)
+{% if faucet_domain != 'localhost' and faucet_domain != 'faucet.localhost' %}
+      - traefik.http.routers.api.entrypoints=https
+      - traefik.http.routers.api.tls=true
+      - traefik.http.routers.api.tls.certresolver=letsencrypt
+{% endif %}
+      - traefik.http.routers.api.service=api@internal
+    ports:
+      - "80:80"
+      - "443:443"
+    command:
+      - '--api'
+      - '--providers.docker=true'
+      - '--providers.docker.exposedByDefault=false'
+      - '--providers.docker.network=faucet'
+      - '--entrypoints.http=true'
+      - '--entrypoints.http.address=:80'
+{% if faucet_domain != 'localhost' and faucet_domain != 'faucet.localhost' %}
+      - '--entrypoints.http.http.redirections.entrypoint.to=https'
+      - '--entrypoints.http.http.redirections.entrypoint.scheme=https'
+      - '--entrypoints.https=true'
+      - '--entrypoints.https.address=:443'
+      - '--certificatesResolvers.letsencrypt.acme.email={{ acme_email }}'
+      - '--certificatesResolvers.letsencrypt.acme.storage=acme.json'
+      - '--certificatesResolvers.letsencrypt.acme.httpChallenge.entryPoint=http'
+{% endif %}
+      - '--log=true'
+      - '--log.level=DEBUG'
+
+  faucet:
+    image: "obada/faucet:develop"
+    container_name: faucet
+    restart: always
+    environment:
+      NODE: "{{ node_rpc }}"
+      ACCOUNT_NAME: faucet
+      MNEMONIC: "{{ faucet_mnemonic }}"
+      KEYRING_PASSWORD: "{{ faucet_keyring_password }}"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.faucet.rule=Host(`{{ faucet_domain }}`) && Path(`/credit`) && Method(`POST`)
+      - traefik.http.middlewares.rm-credit-prefix.replacepath.path=/
+      - traefik.http.routers.faucet.middlewares=rm-credit-prefix@docker
+{% if faucet_domain != 'localhost' and faucet_domain != 'faucet.localhost' %}
+      - traefik.http.routers.faucet.entrypoints=https
+      - traefik.http.routers.faucet.tls.certresolver=letsencrypt
+{% endif %}
+      - traefik.http.routers.faucet.service=faucet-service
+      - traefik.http.services.faucet-service.loadbalancer.server.port=80
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+    depends_on:
+      - traefik
+    networks:
+      - faucet
+    
+  faucet-ui:
+    image: "obada/faucet-ui:develop"
+    container_name: faucet-ui
+    restart: always
+    environment:
+      RECAPTCHA_SITE_KEY: "{{ recaptcha_site_key }}"
+{% if faucet_domain == 'localhost' or faucet_domain == 'faucet.localhost' %}
+      CF_OBADA_FAUCET_SERVER: "http://{{ faucet_domain }}"
+{% else %}
+      CF_OBADA_FAUCET_SERVER: "https://{{ faucet_domain }}"
+{% endif %}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.faucetui.rule=Host(`{{ faucet_domain }}`)
+{% if faucet_domain != 'localhost' and faucet_domain != 'faucet.localhost' %}
+      - traefik.http.routers.faucetui.entrypoints=https
+      - traefik.http.routers.faucetui.tls.certresolver=letsencrypt
+{% endif %}
+      - traefik.http.routers.faucetui.service=faucetui-service
+      - traefik.http.services.faucetui-service.loadbalancer.server.port=3000
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+    depends_on:
+      - traefik
+    networks:
+      - faucet
+
+networks:
+  faucet:
+    

@@ -1,0 +1,39 @@
+
+---
+
+- name: Add SSH public key.
+  ansible.posix.authorized_key:
+    user: faucet
+    state: present
+    key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/ssh_key.pub') }}"
+  become: "{{ should_become }}"
+
+- name: Configure Faucet.
+  block:
+
+    - name: Create necessary folders.
+      file:
+        path: "/home/faucet/{{ item }}"
+        state: directory
+      with_items:
+        - traefik
+
+    - name: Create acme.json and set a propper permissions
+      file:
+        path: "/home/faucet/traefik/acme.json"
+        state: touch
+        mode: 0600
+
+    - name: Copy docker-compose file.
+      template:
+        src: "docker-compose.yml.j2"
+        dest: "/home/faucet/docker-compose.yml"
+        mode: 0600
+
+    - name: Running docker-compose.
+      community.docker.docker_compose:
+        project_src: "/home/faucet"
+        recreate: always
+      
+  become_user: faucet
+  become: yes

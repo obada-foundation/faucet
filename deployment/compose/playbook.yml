@@ -1,0 +1,15 @@
+---
+- hosts: faucet
+  roles:
+    - { role: server, become: "{{ should_become  }}" }
+    - { role: jnv.unattended-upgrades, become: "{{ should_become }}" }
+    - { role: geerlingguy.pip, become: "{{ should_become }}" }
+    - { role: geerlingguy.docker, become: "{{ should_become }}" }
+    - faucet
+
+  vars:
+    docker_users:
+      - faucet
+    pip_install_packages:
+      - name: docker
+      - name: docker-compose

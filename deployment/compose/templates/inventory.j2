@@ -1,0 +1,18 @@
+[faucet]
+{{ ssh_host_ip }}
+
+[faucet:vars]
+ansible_ssh_user={{ ssh_user }}
+ansible_ssh_port={{ ssh_port }}
+ansible_ssh_private_key_file=~/.ssh/ssh_key
+ansible_python_interpreter=/usr/bin/python3
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+node_rpc={{ node_rpc }}
+faucet_mnemonic={{ faucet_mnemonic }}
+faucet_keyring_password={{ faucet_keyring_password }}
+faucet_domain={{ faucet_domain }}
+acme_email={{ acme_email }}
+recaptcha_site_key={{ recaptcha_site_key }}
+
+# Change it to "no" if you going to deploy from the root user
+should_become={{ should_become }}
