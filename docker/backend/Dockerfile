@@ -5,7 +5,8 @@ FROM ghcr.io/tendermint/faucet
 ENV CLI_NAME=/home/faucet/fullcored
 ENV NODE="node.alpha.obada.io:26656"
 ENV PORT=8000
-ENV DENOMS=aobd
+ENV DENOMS=obd
+ENV MAX_CREDIT=100
 
 RUN adduser -D faucet
 
