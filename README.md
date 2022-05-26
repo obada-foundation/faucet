@@ -1,3 +1,17 @@
+## Usage
+
+### With UI
+
+Go to `https://faucet.obada.io` or your custom address and go over the form, in the end you will get `1obd`.
+
+### With curl
+```sh
+    curl -X POST https://faucet.obada.io/credit -d '{"address": "obada1jdk3wjata2a73qzjs0mys0rycvhjaz7v53c9s4", "coins":["50obd"]}'
+```
+
+Where `address` is your OBADA address and `coins` is amount of credit that you want to take. The maximum amount per single address is `100obd`.
+
+
 ## Deploy faucet with Ansible and docker-compose 
 ### Install required packages
 
